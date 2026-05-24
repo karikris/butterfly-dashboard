@@ -2,7 +2,7 @@
 
 Interactive Streamlit dashboard for exploring Australian butterfly occurrence records derived from Atlas of Living Australia data.
 
-Public dashboard URL: pending Streamlit Community Cloud deployment.
+Public dashboard URL: https://butterfly-dashboard.streamlit.app/
 
 ## Data
 
