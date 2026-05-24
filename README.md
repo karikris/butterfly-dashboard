@@ -1,4 +1,4 @@
-# Butterfly Spatial Heatmap Dashboard
+# Butterfly Dashboard
 
 Interactive Streamlit dashboard for exploring Australian butterfly occurrence records derived from Atlas of Living Australia data.
 
@@ -28,6 +28,18 @@ Both Include and Exclude modes count as active filters. Family-level colors use
 a fixed palette so the six butterfly families are easy to distinguish. Deeper
 levels use stable generated colors based on the active genus, species, or
 scientific name value.
+
+The `Selected-category share heatmap` map mode keeps the same active color
+level rules, then lets you pick one focus value from that level. Each bubble
+shows where that focus value occurs after the current family/genus/species,
+state, and year filters are applied. Bubble size is the focus value's
+observation count at that rounded coordinate. Bubble opacity is the focus
+value's share of all filtered observations at that coordinate. Tooltips show
+the focus count, total coordinate count, share percentage, and top competing
+values at the active color level.
+
+State and year filters only subset the records shown. They do not change
+whether colors represent family, genus, species, or scientific name.
 
 | Family | Color | Mapped record count |
 | --- | --- | ---: |
