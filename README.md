@@ -13,6 +13,31 @@ Current packaged dashboard data:
 - `data/butterfly_grid_bins.parquet`
 - `data/dashboard_dimensions.json`
 
+## Map Coloring
+
+Map dots change color by the most specific active taxonomy selection:
+
+| Active selection level | Dot colors represent |
+| --- | --- |
+| No family, genus, or species filter | `family` |
+| Family filter active | `genus` values within the selected family/families |
+| Genus filter active | `species` values within the selected genus/genera |
+| Species filter active | `scientificName` values within the selected species |
+
+Both Include and Exclude modes count as active filters. Family-level colors use
+a fixed palette so the six butterfly families are easy to distinguish. Deeper
+levels use stable generated colors based on the active genus, species, or
+scientific name value.
+
+| Family | Color | Mapped record count |
+| --- | --- | ---: |
+| Hesperiidae | Red | 78,204 |
+| Lycaenidae | Green | 120,663 |
+| Nymphalidae | Blue | 206,261 |
+| Papilionidae | Yellow | 41,328 |
+| Pieridae | Purple | 68,244 |
+| Riodinidae | Orange | 68 |
+
 ## Local Run
 
 ```bash
