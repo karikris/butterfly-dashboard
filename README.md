@@ -29,6 +29,13 @@ a fixed palette so the six butterfly families are easy to distinguish. Deeper
 levels use stable generated colors based on the active genus, species, or
 scientific name value.
 
+The `Piechart composition markers` map mode draws one piechart per rounded
+coordinate. Piechart size is based on the total number of filtered observations
+at that map point. Pie slices show the proportions of the active family, genus,
+species, or scientific name values registered at that same map point. Family
+level pies show all family slices. Deeper levels show the top eight values and
+combine the rest as `Other` so the marker stays readable.
+
 The `Selected-category share heatmap` map mode keeps the same active color
 level rules, then lets you pick one focus value from that level. Each bubble
 shows where that focus value occurs after the current family/genus/species,
