@@ -1,5 +1,5 @@
 {
-  "built_at_utc": "2026-05-25T12:29:12+00:00",
+  "built_at_utc": "2026-05-25T12:57:19+00:00",
   "canonical_species_column": "species",
   "family_values": [
     "Hesperiidae",
@@ -1412,6 +1412,11 @@
     "Zizeeria karsandra",
     "Zizina otis",
     "Zizula hylax"
+  ],
+  "state_status_level_values": [
+    "Critically Endangered",
+    "Endangered",
+    "Vulnerable"
   ],
   "state_status_values": [
     "NSW: Critically Endangered; QLD: Vulnerable",

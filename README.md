@@ -38,6 +38,8 @@ The packaged grid parquet carries these enrichment fields:
 | --- | --- |
 | `Status` | EPBC Act threatened status used as the main Commonwealth status field |
 | `state_status` | State or territory listing status, usually prefixed by jurisdiction |
+| `state_status_level` | Normalised state/territory level, such as `Critically Endangered`, `Endangered`, or `Vulnerable` |
+| `state_status_for_occurrence` | Jurisdiction-specific state listing matched to the record's `stateProvince` |
 | `epbc_listed_taxon` | Accepted EPBC-listed taxon matched to the occurrence |
 | `state_listed_taxon` | Accepted state-listed taxon matched to the occurrence |
 | `epbc_sprat_url` | SPRAT profile URL where available |
@@ -51,6 +53,13 @@ CSV. Blank conservation fields mean the occurrence did not match the curated
 reference table; they should not be interpreted as proof that the taxon has no
 legal or conservation status.
 
+The sidebar conservation filter has two controls. `Listing authority` selects
+between `National EPBC` and `State / territory`. `Conservation status` then
+filters to one or more status levels from the selected authority. When a
+conservation status is active, map colors are forced to the `species` level so
+the listed butterfly species under that status remain visually distinct. State,
+year, family, genus, and species filters continue to subset the same view.
+
 ## Map Coloring
 
 Map dots change color by the most specific active taxonomy selection:
@@ -61,6 +70,7 @@ Map dots change color by the most specific active taxonomy selection:
 | Family filter active | `genus` values within the selected family/families |
 | Genus filter active | `species` values within the selected genus/genera |
 | Species filter active | `scientificName` values within the selected species |
+| Conservation status filter active | `species` values under the selected national or state status |
 
 Both Include and Exclude modes count as active filters. Family-level colors use
 a fixed palette so the six butterfly families are easy to distinguish. Deeper
