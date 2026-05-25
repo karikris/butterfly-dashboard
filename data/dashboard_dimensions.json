@@ -1,5 +1,5 @@
 {
-  "built_at_utc": "2026-05-25T11:09:25+00:00",
+  "built_at_utc": "2026-05-25T12:29:12+00:00",
   "canonical_species_column": "species",
   "family_values": [
     "Hesperiidae",
@@ -972,7 +972,7 @@
     "Zizula hylax",
     "Zizula hylax attenuata"
   ],
-  "source_path": "datasets/insecta/lepidoptera/butterflies_cleaned.parquet",
+  "source_path": "datasets/insecta/lepidoptera/butterflies_conservation.parquet",
   "species_values": [
     "Acraea andromacha",
     "Acraea terpsicore",
@@ -1413,6 +1413,20 @@
     "Zizina otis",
     "Zizula hylax"
   ],
+  "state_status_values": [
+    "NSW: Critically Endangered; QLD: Vulnerable",
+    "NSW: Endangered",
+    "NSW: Endangered; QLD: Endangered",
+    "NT: Endangered",
+    "NT: Endangered (legacy source; verify current NT status)",
+    "QLD: Critically Endangered",
+    "QLD: Vulnerable",
+    "TAS: Endangered",
+    "VIC: Critically Endangered",
+    "VIC: Endangered",
+    "VIC: Endangered proposed / FFG-listed",
+    "WA: Critically Endangered"
+  ],
   "state_values": [
     "Ashmore and Cartier Islands",
     "Australian Capital Territory",
@@ -1424,6 +1438,11 @@
     "Tasmania",
     "Victoria",
     "Western Australia"
+  ],
+  "status_values": [
+    "Critically Endangered",
+    "Endangered",
+    "Vulnerable"
   ],
   "year_values": [
     1767,

@@ -12,6 +12,7 @@ Current packaged dashboard data:
 
 - `data/butterfly_grid_bins.parquet`
 - `data/dashboard_dimensions.json`
+- `data/reference/butterfly_conservation_status.csv`
 
 The packaged spatial bins are built at `Local` precision, then the dashboard
 can aggregate them to the selected map precision:
@@ -21,6 +22,34 @@ can aggregate them to the selected map precision:
 | Regional | 1 | 10,901 | Default view |
 | Local | 2 | 54,818 | Detailed exploration |
 | Coarse | 0 | 729 | National overview |
+
+## Conservation Status
+
+The dashboard data includes a curated threatened-species enrichment table at
+`data/reference/butterfly_conservation_status.csv`. The table records EPBC Act
+and state/territory listing evidence for Australian butterflies identified from
+official Commonwealth and state sources, including SPRAT profiles, conservation
+advice or recovery-plan links where available, protected-matters evidence, and
+state threatened-species profiles or lists.
+
+The packaged grid parquet carries these enrichment fields:
+
+| Column | Meaning |
+| --- | --- |
+| `Status` | EPBC Act threatened status used as the main Commonwealth status field |
+| `state_status` | State or territory listing status, usually prefixed by jurisdiction |
+| `epbc_listed_taxon` | Accepted EPBC-listed taxon matched to the occurrence |
+| `state_listed_taxon` | Accepted state-listed taxon matched to the occurrence |
+| `epbc_sprat_url` | SPRAT profile URL where available |
+| `epbc_conservation_advice_url` | Commonwealth conservation advice URL where available |
+| `epbc_recovery_plan_url` | Commonwealth recovery-plan URL where available |
+| `epbc_protected_matters_url` | Protected Matters report or evidence URL where available |
+
+Matching is intentionally conservative. Occurrences are matched first on exact
+`scientificName`, then exact `species`, then by synonyms listed in the reference
+CSV. Blank conservation fields mean the occurrence did not match the curated
+reference table; they should not be interpreted as proof that the taxon has no
+legal or conservation status.
 
 ## Map Coloring
 
