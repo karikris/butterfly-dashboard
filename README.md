@@ -46,22 +46,22 @@ interpolated, and values above `50,000` records are capped at `26 px` radius.
 | Records at map point | Radius | Diameter |
 | ---: | ---: | ---: |
 | 1 | 3 px | 6 px |
-| 10 | 4 px | 8 px |
-| 25 | 5 px | 10 px |
-| 50 | 6 px | 12 px |
-| 100 | 7 px | 14 px |
-| 250 | 8 px | 16 px |
-| 500 | 9 px | 18 px |
-| 750 | 10 px | 20 px |
-| 1,000 | 11 px | 22 px |
-| 2,500 | 12 px | 24 px |
-| 5,000 | 14 px | 28 px |
-| 7,500 | 16 px | 32 px |
-| 10,000 | 18 px | 36 px |
-| 15,000 | 20 px | 40 px |
-| 20,000 | 22 px | 44 px |
-| 25,000 | 24 px | 48 px |
-| 50,000 | 26 px | 52 px |
+| 10 | 5 px | 10 px |
+| 25 | 6 px | 12 px |
+| 50 | 7 px | 14 px |
+| 100 | 8 px | 16 px |
+| 250 | 9 px | 18 px |
+| 500 | 10 px | 20 px |
+| 750 | 11 px | 22 px |
+| 1,000 | 12 px | 24 px |
+| 2,500 | 14 px | 28 px |
+| 5,000 | 16 px | 32 px |
+| 7,500 | 18 px | 36 px |
+| 10,000 | 20 px | 40 px |
+| 15,000 | 22 px | 44 px |
+| 20,000 | 24 px | 48 px |
+| 25,000 | 26 px | 52 px |
+| 50,000 | 28 px | 56 px |
 
 The optional `Compare category heatmaps` mode displays one heatmap per active
 category value. On the landing page this means six family heatmaps. Selecting a
