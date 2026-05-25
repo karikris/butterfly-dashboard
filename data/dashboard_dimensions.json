@@ -1,5 +1,5 @@
 {
-  "built_at_utc": "2026-05-24T08:51:02+00:00",
+  "built_at_utc": "2026-05-25T11:09:25+00:00",
   "canonical_species_column": "species",
   "family_values": [
     "Hesperiidae",
@@ -147,7 +147,7 @@
     "Zizula"
   ],
   "grid_bins_path": "datasets/insecta/lepidoptera/dashboard/butterfly_grid_bins.parquet",
-  "grid_decimals": 0,
+  "grid_decimals": 2,
   "h3_bins_path": null,
   "mapped_row_count": 514768,
   "max_year": 2026,

@@ -78,6 +78,11 @@ COLOR_LEVEL_LABELS = {
     "Species": "species",
     "Scientific name": "scientificName",
 }
+COORDINATE_PRECISION_LEVELS = {
+    "Regional": 1,
+    "Local": 2,
+    "Coarse": 0,
+}
 FAMILY_COLORS = {
     "Hesperiidae": [220, 38, 38, 190],
     "Lycaenidae": [22, 163, 74, 190],
@@ -398,6 +403,16 @@ def map_point_limit_selector(st: Any) -> int:
     )
 
 
+def coordinate_precision_selector(st: Any) -> int:
+    selected_label = st.selectbox(
+        "Coordinate precision",
+        list(COORDINATE_PRECISION_LEVELS),
+        index=0,
+        key="coordinate_precision_v1",
+    )
+    return COORDINATE_PRECISION_LEVELS[selected_label]
+
+
 def max_share_heatmaps_selector(st: Any) -> int:
     return int(
         st.number_input(
@@ -663,6 +678,7 @@ def main() -> None:
 
     base_options = query.option_values(grid_path, query.SlicerState())
     map_point_limit = map_point_limit_selector(max_controls)
+    coordinate_decimals = coordinate_precision_selector(max_controls)
     locked_color_dimension = color_lock_selector(max_controls)
     map_display_mode = map_display_selector(max_controls)
     max_share_heatmaps = (
@@ -730,6 +746,7 @@ def main() -> None:
             slicers,
             limit=map_point_limit,
             locked_color_dimension=locked_color_dimension,
+            coordinate_decimals=coordinate_decimals,
         )
     elif map_display_mode == CATEGORY_SHARE_HEATMAPS_MODE:
         rows = query.query_all_share_heatmap_bins(
@@ -737,6 +754,7 @@ def main() -> None:
             slicers,
             limit_per_category=share_limit_per_category,
             locked_color_dimension=locked_color_dimension,
+            coordinate_decimals=coordinate_decimals,
             max_categories=max_share_heatmaps,
         )
     elif map_display_mode == PIECHART_COMPOSITION_MODE:
@@ -745,6 +763,7 @@ def main() -> None:
             slicers,
             limit=map_point_limit,
             locked_color_dimension=locked_color_dimension,
+            coordinate_decimals=coordinate_decimals,
         )
     elif map_display_mode == SHARE_HEATMAP_MODE and focus_value:
         rows = query.query_share_heatmap_bins(
@@ -753,6 +772,7 @@ def main() -> None:
             focus_value=focus_value,
             limit=map_point_limit,
             locked_color_dimension=locked_color_dimension,
+            coordinate_decimals=coordinate_decimals,
         )
     elif map_display_mode == SHARE_HEATMAP_MODE:
         rows = []
@@ -762,6 +782,7 @@ def main() -> None:
             slicers,
             limit=map_point_limit,
             locked_color_dimension=locked_color_dimension,
+            coordinate_decimals=coordinate_decimals,
         )
     years = query.year_summary(grid_path, slicers)
     matching_records = query.mapped_record_count(grid_path, slicers)

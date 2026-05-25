@@ -13,6 +13,15 @@ Current packaged dashboard data:
 - `data/butterfly_grid_bins.parquet`
 - `data/dashboard_dimensions.json`
 
+The packaged spatial bins are built at `Local` precision, then the dashboard
+can aggregate them to the selected map precision:
+
+| Precision | Coordinate decimals | Approximate map points | Typical use |
+| --- | ---: | ---: | --- |
+| Regional | 1 | 10,901 | Default view |
+| Local | 2 | 54,818 | Detailed exploration |
+| Coarse | 0 | 729 | National overview |
+
 ## Map Coloring
 
 Map dots change color by the most specific active taxonomy selection:
@@ -41,7 +50,7 @@ dominant share, dominant record count, total record count, and full composition
 for that map point.
 
 Dominant map point sizing uses this radius scale. Values between table rows are
-interpolated, and values above `50,000` records are capped at `26 px` radius.
+interpolated, and values above `50,000` records are capped at `28 px` radius.
 
 | Records at map point | Radius | Diameter |
 | ---: | ---: | ---: |
