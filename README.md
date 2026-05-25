@@ -29,6 +29,15 @@ a fixed palette so the six butterfly families are easy to distinguish. Deeper
 levels use stable generated colors based on the active genus, species, or
 scientific name value.
 
+The default `Category share heatmaps` mode displays one heatmap per active
+category value. On the landing page this means six family heatmaps. Selecting a
+family changes the panels to genus heatmaps for that family, selecting a genus
+changes the panels to species heatmaps, and selecting a species changes the
+panels to scientific name heatmaps. State and year filters only subset records;
+they do not change the active taxonomy level. Each panel sizes points by the
+total observations at the coordinate and uses opacity to show that category's
+share of the coordinate total.
+
 The `Piechart composition markers` map mode draws one piechart per rounded
 coordinate. Piechart size is based on the total number of filtered observations
 at that map point. Pie slices show the proportions of the active family, genus,
