@@ -40,6 +40,29 @@ dominant category's share increases. Tooltips show the dominant category,
 dominant share, dominant record count, total record count, and full composition
 for that map point.
 
+Dominant map point sizing uses this radius scale. Values between table rows are
+interpolated, and values above `50,000` records are capped at `26 px` radius.
+
+| Records at map point | Radius | Diameter |
+| ---: | ---: | ---: |
+| 1 | 3 px | 6 px |
+| 10 | 4 px | 8 px |
+| 25 | 5 px | 10 px |
+| 50 | 6 px | 12 px |
+| 100 | 7 px | 14 px |
+| 250 | 8 px | 16 px |
+| 500 | 9 px | 18 px |
+| 750 | 10 px | 20 px |
+| 1,000 | 11 px | 22 px |
+| 2,500 | 12 px | 24 px |
+| 5,000 | 14 px | 28 px |
+| 7,500 | 16 px | 32 px |
+| 10,000 | 18 px | 36 px |
+| 15,000 | 20 px | 40 px |
+| 20,000 | 22 px | 44 px |
+| 25,000 | 24 px | 48 px |
+| 50,000 | 26 px | 52 px |
+
 The optional `Compare category heatmaps` mode displays one heatmap per active
 category value. On the landing page this means six family heatmaps. Selecting a
 family changes the panels to genus heatmaps for that family, selecting a genus
