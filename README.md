@@ -29,7 +29,18 @@ a fixed palette so the six butterfly families are easy to distinguish. Deeper
 levels use stable generated colors based on the active genus, species, or
 scientific name value.
 
-The default `Category share heatmaps` mode displays one heatmap per active
+The default `Dominant category map` mode displays one large map. Each point is
+colored by the category with the most observations at that rounded coordinate.
+On the landing page, the dominant category is one of the six families. After
+drilling into a family, the dominant category becomes the leading genus at each
+point. Drilling into genus changes the color level to species, and drilling into
+species changes it to scientific name. Point size is based on the total number
+of filtered observations at that coordinate. Point opacity increases as the
+dominant category's share increases. Tooltips show the dominant category,
+dominant share, dominant record count, total record count, and full composition
+for that map point.
+
+The optional `Compare category heatmaps` mode displays one heatmap per active
 category value. On the landing page this means six family heatmaps. Selecting a
 family changes the panels to genus heatmaps for that family, selecting a genus
 changes the panels to species heatmaps, and selecting a species changes the
