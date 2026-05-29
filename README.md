@@ -6,38 +6,48 @@ Public dashboard URL: https://butterfly-dashboard.streamlit.app/
 
 ## Data
 
-The hosted dashboard uses pre-aggregated Statistical Area Level 3 polygons, not
-raw occurrence rows and not rounded coordinate point bins. Observer/user fields,
+The hosted dashboard uses pre-aggregated ABS Statistical Area polygons, not raw
+occurrence rows and not rounded coordinate point bins. The default map view is
+SA2, with a sidebar toggle for SA1, SA2, and SA3. Observer/user fields,
 comments, raw media, and profile links are not included.
 
 Current packaged dashboard data:
 
+- `data/butterfly_sa1_bins.parquet`
+- `data/butterfly_sa2_bins.parquet`
 - `data/butterfly_sa3_bins.parquet`
+- `data/sa1_boundaries_2021.parquet`
+- `data/sa2_boundaries_2021.parquet`
 - `data/sa3_boundaries_2021.parquet`
+- `data/sa1_dimensions.json`
+- `data/sa2_dimensions.json`
 - `data/sa3_dimensions.json`
 - `data/reference/butterfly_conservation_status.csv`
 
-The SA3 geography comes from the Australian Bureau of Statistics ASGS Edition 3
-`Statistical Areas Level 3 - 2021 - Shapefile` in GDA2020. The offline build
-uses the full ABS geometry for the spatial join, then stores simplified display
-geometry as both WKB and GeoJSON in Parquet so Streamlit can render polygons
-quickly. Runtime reads only these pre-aggregated Parquet files.
+The SA1, SA2, and SA3 geographies come from the Australian Bureau of
+Statistics ASGS Edition 3 `Statistical Areas - 2021 - Shapefile` boundary files
+in GDA2020. The offline build uses the full ABS geometry for the spatial join,
+then stores simplified display geometry as both WKB and GeoJSON in Parquet so
+Streamlit can render polygons quickly. Runtime reads only these pre-aggregated
+Parquet files.
 
 Only records with `year >= 1950` are included, which keeps observations from
 January 1950 onward when using the dataset's year-level date field. Records
-before 1950 and records without usable coordinates are excluded from the SA3 map
+before 1950 and records without usable coordinates are excluded from the map
 artifacts.
 
-Current packaged SA3 build summary:
+Current packaged build summary:
 
 | Metric | Count |
 | --- | ---: |
 | Source occurrence rows | 521,911 |
 | Rows from 1950 onward | 431,012 |
 | Rows from 1950 onward with coordinates | 426,421 |
-| Records matched to SA3 polygons | 422,406 |
-| Coordinate rows not matched to an SA3 polygon | 4,015 |
-| SA3 polygons in boundary artifact | 340 |
+| Records matched to ABS polygons | 422,406 |
+| Coordinate rows not matched to an ABS polygon | 4,015 |
+| Occupied SA1 polygons in artifact | 24,095 |
+| Occupied SA2 polygons in artifact | 2,419 |
+| Occupied SA3 polygons in artifact | 340 |
 
 ## Conservation Status
 
@@ -48,7 +58,7 @@ official Commonwealth and state sources, including SPRAT profiles, conservation
 advice or recovery-plan links where available, protected-matters evidence, and
 state threatened-species profiles or lists.
 
-The packaged SA3 parquet carries these enrichment fields:
+The packaged area-level parquet files carry these enrichment fields:
 
 | Column | Meaning |
 | --- | --- |
@@ -79,13 +89,15 @@ view.
 
 ## Map Coloring
 
-The dashboard has one map view: the SA3 dominant category polygon map. Each
-polygon is colored by the category with the most observations in that SA3 after
-the current filters are applied.
+The dashboard has one map view: the dominant category polygon map. The left
+menu starts with an `ABS area level` toggle ordered SA1, SA2, SA3; SA2 is the
+default because it gives a local map without the visual density of SA1. Each
+polygon is colored by the category with the most observations in that area
+after the current filters are applied.
 
 | Active selection level | Polygon colors represent |
 | --- | --- |
-| No family, genus, or species filter | Dominant `family` in the SA3 |
+| No family, genus, or species filter | Dominant `family` in the active ABS area |
 | Family filter active | Dominant `genus` within the selected family/families |
 | Genus filter active | Dominant `species` within the selected genus/genera |
 | Species filter active | Dominant `scientificName` within the selected species |
@@ -97,19 +109,19 @@ distinguish. Deeper levels use stable generated colors based on the active
 genus, species, or scientific name value.
 
 Polygon opacity represents the total number of filtered occurrence records in
-that SA3. The lowest opacity is used for one occurrence record. The highest
-opacity is assigned to the SA3 with the largest filtered record count currently
+that ABS area. The lowest opacity is used for one occurrence record. The highest
+opacity is assigned to the polygon with the largest filtered record count currently
 on the map. This means hue answers "which category dominates here?", while
 opacity answers "how many records are here relative to the current view?"
 
-Tooltips show the SA3 name, dominant category, dominant share, dominant record
+Tooltips show the ABS area level/name, dominant category, dominant share, dominant record
 count, total record count, exact composition text, and the same SVG pie chart
 used by the previous dominant point tooltip.
 
 State and year filters only subset the records shown. They do not change
 whether colors represent family, genus, species, or scientific name.
 
-| Family | Color | SA3-matched record count |
+| Family | Color | Area-matched record count |
 | --- | --- | ---: |
 | Hesperiidae | Red | 56,018 |
 | Lycaenidae | Green | 86,471 |
@@ -123,13 +135,13 @@ whether colors represent family, genus, species, or scientific name.
 The reproducible source-side build lives in the parent project:
 
 ```bash
-PYTHONPATH=. .venv/bin/python scripts/visuals/spatial_heatmap_dashboard/build_sa3_bins.py
+PYTHONPATH=. .venv/bin/python scripts/visuals/spatial_heatmap_dashboard/build_sa3_bins.py --area-level all
 ```
 
 The build pattern is:
 
-1. Download/extract the official ABS SA3 2021 GDA2020 shapefile.
-2. Use DuckDB Spatial offline to join original occurrence coordinates to SA3.
+1. Download/extract the official ABS SA1, SA2, and SA3 2021 GDA2020 shapefiles.
+2. Use DuckDB Spatial offline to join original occurrence coordinates to the selected ABS geography.
 3. Filter to records with `year >= 1950`.
 4. Store pre-aggregated Parquet artifacts.
 5. Let Streamlit read only aggregates at runtime.
@@ -156,7 +168,7 @@ py -m venv .venv
 
 ## Attribution
 
-Occurrence data are derived from Atlas of Living Australia records. SA3
+Occurrence data are derived from Atlas of Living Australia records. ABS
 boundaries are derived from Australian Bureau of Statistics ASGS Edition 3
 digital boundary files. This dashboard is intended for exploratory analysis and
 should not be treated as precise locality disclosure.
