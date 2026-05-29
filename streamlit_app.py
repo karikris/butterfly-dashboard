@@ -6,15 +6,36 @@ from __future__ import annotations
 import hashlib
 import html
 import inspect
+import json
 import math
+import sys
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-import query
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+try:
+    from scripts.visuals.spatial_heatmap_dashboard import query
+except ModuleNotFoundError:
+    import query  # type: ignore[no-redef]
 
 
-DEFAULT_GRID_PATH = Path("data/butterfly_grid_bins.parquet")
+def default_data_path(deployment_path: str, source_path: str) -> Path:
+    local_path = Path(deployment_path)
+    return local_path if local_path.exists() else Path(source_path)
+
+
+DEFAULT_SA3_BINS_PATH = default_data_path(
+    "data/butterfly_sa3_bins.parquet",
+    "datasets/insecta/lepidoptera/dashboard/butterfly_sa3_bins.parquet",
+)
+DEFAULT_SA3_BOUNDARIES_PATH = default_data_path(
+    "data/sa3_boundaries_2021.parquet",
+    "datasets/insecta/lepidoptera/dashboard/sa3_boundaries_2021.parquet",
+)
+DEFAULT_GRID_PATH = Path("datasets/insecta/lepidoptera/dashboard/butterfly_grid_bins.parquet")
 PAGE_TITLE = "Butterfly Dashboard"
 EAST_COAST_STATES = [
     "Victoria",
@@ -33,6 +54,7 @@ MAINLAND_STATES = [
 ]
 CARTO_POSITRON_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 DEFAULT_MAP_POINT_LIMIT = 250_000
+DEFAULT_SA3_POLYGON_LIMIT = 500
 DEFAULT_SHARE_HEATMAP_POINT_LIMIT = 50_000
 DEFAULT_MAX_SHARE_HEATMAPS = 12
 MAP_HEIGHT_PX = 1_180
@@ -44,11 +66,9 @@ PIECHART_COMPOSITION_MODE = "Piechart composition markers"
 SHARE_HEATMAP_MODE = "Selected-category share heatmap"
 MAP_DISPLAY_MODES = [
     DOMINANT_CATEGORY_MODE,
-    PIECHART_COMPOSITION_MODE,
-    CATEGORY_SHARE_HEATMAPS_MODE,
-    SINGLE_COLOR_MODE,
-    SHARE_HEATMAP_MODE,
 ]
+SA3_POLYGON_MIN_ALPHA = 45
+SA3_POLYGON_MAX_ALPHA = 220
 DOMINANT_POINT_RADIUS_SCALE: tuple[tuple[int, int], ...] = (
     (1, 3),
     (10, 5),
@@ -320,6 +340,102 @@ def add_dominant_category_visual_fields(rows: list[dict[str, Any]]) -> list[dict
     return visual_rows
 
 
+def sa3_polygon_alpha(
+    record_count: int | float | None,
+    *,
+    max_record_count: int | float | None,
+) -> int:
+    count = max(float(record_count or 0), 1.0)
+    max_count = max(float(max_record_count or 0), 1.0)
+    if max_count <= 1:
+        return SA3_POLYGON_MIN_ALPHA
+    position = (count - 1.0) / (max_count - 1.0)
+    position = max(0.0, min(position, 1.0))
+    return round(
+        SA3_POLYGON_MIN_ALPHA
+        + position * (SA3_POLYGON_MAX_ALPHA - SA3_POLYGON_MIN_ALPHA)
+    )
+
+
+def build_sa3_tooltip_html(row: dict[str, Any], pie_url: str) -> str:
+    color_level = str(row.get("color_level") or "category")
+    color_level_label = COLOR_LEVEL_DISPLAY_NAMES.get(color_level, "category")
+    dominant_value = str(row.get("dominant_value") or "Not supplied")
+    dominant_count = int(row.get("dominant_record_count") or 0)
+    dominant_share = float(row.get("dominant_share") or 0)
+    total_records = int(row.get("total_record_count") or 0)
+    composition_text = str(row.get("composition_text") or "")
+    base = build_dominant_tooltip_html(
+        color_level_label=color_level_label,
+        dominant_value=dominant_value,
+        share_percent=f"{dominant_share * 100:.1f}%",
+        total_records=total_records,
+        dominant_count=dominant_count,
+        composition_text=composition_text,
+        pie_url=pie_url,
+    )
+    sa3_header = (
+        '<div style="font-weight:700;margin-bottom:6px;">'
+        f"SA3: {html.escape(str(row.get('sa3_name_2021') or 'Unknown SA3'))}"
+        "</div>"
+    )
+    return base.replace(
+        '<div style="font-family:Inter,Arial,sans-serif;line-height:1.35;">',
+        '<div style="font-family:Inter,Arial,sans-serif;line-height:1.35;">'
+        + sa3_header,
+        1,
+    )
+
+
+def add_sa3_polygon_visual_fields(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    max_record_count = max(
+        (int(row.get("total_record_count") or 0) for row in rows),
+        default=1,
+    )
+    visual_rows = []
+    for row in rows:
+        color_level = row.get("color_level")
+        dominant_value = row.get("dominant_value") or "Not supplied"
+        color = map_color(color_level, str(dominant_value)).copy()
+        color[3] = sa3_polygon_alpha(
+            row.get("total_record_count"),
+            max_record_count=max_record_count,
+        )
+        pie_url = pie_svg_data_url(
+            build_pie_svg(
+                row.get("composition") or [],
+                color_level=str(color_level or "category"),
+            )
+        )
+        visual_rows.append(
+            {
+                **row,
+                "fill_color": color,
+                "line_color": [17, 24, 39, 150],
+                "tooltip_pie_url": pie_url,
+                "tooltip_html": build_sa3_tooltip_html(row, pie_url),
+            }
+        )
+    return visual_rows
+
+
+def sa3_rows_to_geojson_features(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    features = []
+    for row in rows:
+        geometry = row.get("geometry_geojson")
+        if isinstance(geometry, str):
+            geometry = json.loads(geometry)
+        properties = {key: value for key, value in row.items() if key != "geometry_geojson"}
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": geometry,
+                "properties": properties,
+            }
+        )
+    return {"type": "FeatureCollection", "features": features}
+
+
 def add_piechart_visual_fields(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     visual_rows = []
     for row in rows:
@@ -467,11 +583,11 @@ def build_partial_slicer_state(
 def map_point_limit_selector(st: Any) -> int:
     return int(
         st.number_input(
-            "Max map points",
-            min_value=10_000,
-            max_value=1_000_000,
-            value=DEFAULT_MAP_POINT_LIMIT,
-            step=10_000,
+            "Max SA3 polygons",
+            min_value=1,
+            max_value=500,
+            value=DEFAULT_SA3_POLYGON_LIMIT,
+            step=10,
         )
     )
 
@@ -726,6 +842,46 @@ def render_dominant_category_map(rows: list[dict[str, Any]], st: Any, pdk: Any) 
     st.pydeck_chart(deck, width="stretch", height=MAP_HEIGHT_PX)
 
 
+def render_sa3_dominant_map(rows: list[dict[str, Any]], st: Any, pdk: Any) -> None:
+    map_rows = add_sa3_polygon_visual_fields(rows)
+    features = sa3_rows_to_geojson_features(map_rows)
+    layer = pdk.Layer(
+        "GeoJsonLayer",
+        features,
+        pickable=True,
+        auto_highlight=True,
+        stroked=True,
+        filled=True,
+        get_fill_color="properties.fill_color",
+        get_line_color="properties.line_color",
+        line_width_min_pixels=1,
+        opacity=1.0,
+    )
+    deck = pdk.Deck(
+        map_style=CARTO_POSITRON_STYLE,
+        initial_view_state=pdk.ViewState(
+            latitude=-25.3,
+            longitude=134.5,
+            zoom=3.2,
+            pitch=0,
+        ),
+        layers=[layer],
+        tooltip={
+            "html": "{properties.tooltip_html}",
+            "style": {
+                "backgroundColor": "rgba(17, 24, 39, 0.96)",
+                "border": "1px solid rgba(255, 255, 255, 0.18)",
+                "borderRadius": "6px",
+                "boxShadow": "0 12px 32px rgba(15, 23, 42, 0.28)",
+                "color": "#f9fafb",
+                "maxWidth": "380px",
+                "padding": "10px",
+            },
+        },
+    )
+    st.pydeck_chart(deck, width="stretch", height=MAP_HEIGHT_PX)
+
+
 def render_piechart_composition(rows: list[dict[str, Any]], st: Any, pdk: Any) -> None:
     map_rows = add_piechart_visual_fields(rows)
     layer = pdk.Layer(
@@ -794,21 +950,22 @@ def main() -> None:
     display_controls = st.sidebar.container()
     config = st.sidebar.container()
     summary = st.sidebar.container()
-    grid_path = Path(config.text_input("Grid bins parquet", value=str(DEFAULT_GRID_PATH)))
-    if not grid_path.exists():
-        st.error(f"Missing grid bins: {grid_path}")
+    sa3_bins_path = Path(
+        config.text_input("SA3 bins parquet", value=str(DEFAULT_SA3_BINS_PATH))
+    )
+    sa3_boundaries_path = Path(
+        config.text_input("SA3 boundaries parquet", value=str(DEFAULT_SA3_BOUNDARIES_PATH))
+    )
+    if not sa3_bins_path.exists():
+        st.error(f"Missing SA3 bins: {sa3_bins_path}")
+        st.stop()
+    if not sa3_boundaries_path.exists():
+        st.error(f"Missing SA3 boundaries: {sa3_boundaries_path}")
         st.stop()
 
-    base_options = query.option_values(grid_path, slicer_state())
-    map_point_limit = map_point_limit_selector(max_controls)
-    coordinate_decimals = coordinate_precision_selector(max_controls)
+    base_options = query.option_values(sa3_bins_path, slicer_state())
+    map_polygon_limit = map_point_limit_selector(max_controls)
     locked_color_dimension = color_lock_selector(max_controls)
-    map_display_mode = map_display_selector(max_controls)
-    max_share_heatmaps = (
-        max_share_heatmaps_selector(max_controls)
-        if map_display_mode == CATEGORY_SHARE_HEATMAPS_MODE
-        else DEFAULT_MAX_SHARE_HEATMAPS
-    )
     conservation_scope, conservation_statuses = conservation_selector(
         base_options,
         conservation_controls,
@@ -817,7 +974,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    family_options = query.option_values(grid_path, conservation_slicers)["families"]
+    family_options = query.option_values(sa3_bins_path, conservation_slicers)["families"]
     include_families, exclude_families = filter_mode(
         "Family",
         family_options,
@@ -829,7 +986,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    genus_options = query.option_values(grid_path, family_slicers)["genera"]
+    genus_options = query.option_values(sa3_bins_path, family_slicers)["genera"]
     include_genera, exclude_genera = filter_mode("Genus", genus_options, genus_controls)
     genus_slicers = slicer_state(
         include_families=include_families,
@@ -839,7 +996,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    species_options = query.option_values(grid_path, genus_slicers)["species"]
+    species_options = query.option_values(sa3_bins_path, genus_slicers)["species"]
     include_species, exclude_species = filter_mode("Species", species_options, species_controls)
     species_slicers = slicer_state(
         include_families=include_families,
@@ -851,7 +1008,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    state_options = query.option_values(grid_path, species_slicers)["states"]
+    state_options = query.option_values(sa3_bins_path, species_slicers)["states"]
     include_states, exclude_states = state_selector(
         state_options,
         state_controls,
@@ -869,7 +1026,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    year_options = query.option_values(grid_path, state_slicers)["years"]
+    year_options = query.option_values(sa3_bins_path, state_slicers)["years"]
     years_for_slider = [int(year) for year in year_options if year is not None]
     year_min = min(years_for_slider) if years_for_slider else None
     year_max = max(years_for_slider) if years_for_slider else None
@@ -900,7 +1057,7 @@ def main() -> None:
         conservation_scope=conservation_scope,
         include_conservation_statuses=conservation_statuses,
     )
-    filtered_options = query.option_values(grid_path, slicers)
+    filtered_options = query.option_values(sa3_bins_path, slicers)
     summary.subheader("Summary statistics")
     summary.caption(
         f"Families: {len(filtered_options['families'])} | "
@@ -909,128 +1066,27 @@ def main() -> None:
         f"States: {len(filtered_options['states'])}"
     )
 
-    focus_value = None
-    if map_display_mode == SHARE_HEATMAP_MODE:
-        focus_options = query.color_value_options(
-            grid_path,
-            slicers,
-            locked_color_dimension=locked_color_dimension,
-        )
-        focus_value = share_focus_selector(max_controls, focus_options)
-
-    share_limit_per_category = min(map_point_limit, DEFAULT_SHARE_HEATMAP_POINT_LIMIT)
-    if map_display_mode == DOMINANT_CATEGORY_MODE:
-        rows = query_with_coordinate_precision(
-            query.query_composition_markers,
-            grid_path,
-            slicers,
-            coordinate_decimals=coordinate_decimals,
-            limit=map_point_limit,
-            locked_color_dimension=locked_color_dimension,
-        )
-    elif map_display_mode == CATEGORY_SHARE_HEATMAPS_MODE:
-        rows = query_with_coordinate_precision(
-            query.query_all_share_heatmap_bins,
-            grid_path,
-            slicers,
-            coordinate_decimals=coordinate_decimals,
-            limit_per_category=share_limit_per_category,
-            locked_color_dimension=locked_color_dimension,
-            max_categories=max_share_heatmaps,
-        )
-    elif map_display_mode == PIECHART_COMPOSITION_MODE:
-        rows = query_with_coordinate_precision(
-            query.query_composition_markers,
-            grid_path,
-            slicers,
-            coordinate_decimals=coordinate_decimals,
-            limit=map_point_limit,
-            locked_color_dimension=locked_color_dimension,
-        )
-    elif map_display_mode == SHARE_HEATMAP_MODE and focus_value:
-        rows = query_with_coordinate_precision(
-            query.query_share_heatmap_bins,
-            grid_path,
-            slicers,
-            coordinate_decimals=coordinate_decimals,
-            focus_value=focus_value,
-            limit=map_point_limit,
-            locked_color_dimension=locked_color_dimension,
-        )
-    elif map_display_mode == SHARE_HEATMAP_MODE:
-        rows = []
-    else:
-        rows = query_with_coordinate_precision(
-            query.query_grid_bins,
-            grid_path,
-            slicers,
-            coordinate_decimals=coordinate_decimals,
-            limit=map_point_limit,
-            locked_color_dimension=locked_color_dimension,
-        )
-    years = query.year_summary(grid_path, slicers)
-    matching_records = query.mapped_record_count(grid_path, slicers)
-    if map_display_mode in {DOMINANT_CATEGORY_MODE, PIECHART_COMPOSITION_MODE}:
-        total_records = sum(int(row["total_record_count"]) for row in rows)
-    else:
-        total_records = sum(int(row["record_count"]) for row in rows)
-    point_based_modes = {
-        DOMINANT_CATEGORY_MODE,
-        CATEGORY_SHARE_HEATMAPS_MODE,
-        PIECHART_COMPOSITION_MODE,
-    }
-    summary.metric(
-        "Map points" if map_display_mode in point_based_modes else "Map bins",
-        f"{len(rows):,}",
+    rows = query.query_sa3_composition_shapes(
+        sa3_bins_path,
+        sa3_boundaries_path,
+        slicers,
+        limit=map_polygon_limit,
+        locked_color_dimension=locked_color_dimension,
     )
-    if map_display_mode == SHARE_HEATMAP_MODE:
-        summary.metric("Focused records", f"{total_records:,}")
-    else:
-        summary.metric("Visible records", f"{total_records:,}")
+    years = query.year_summary(sa3_bins_path, slicers)
+    matching_records = query.mapped_record_count(sa3_bins_path, slicers)
+    total_records = sum(int(row["total_record_count"]) for row in rows)
+    summary.metric("SA3 polygons", f"{len(rows):,}")
+    summary.metric("Visible records", f"{total_records:,}")
     summary.metric("Matching records", f"{matching_records:,}")
     summary.metric("Years", f"{len(years):,}")
-    if map_display_mode == CATEGORY_SHARE_HEATMAPS_MODE:
-        shown_categories = len(rows_by_color_value(rows))
-        summary.metric("Heatmaps", f"{shown_categories:,}")
-        if shown_categories >= max_share_heatmaps:
-            summary.warning(
-                f"Showing the top {max_share_heatmaps:,} active categories by record count. "
-                "Narrow the taxonomy slicers to inspect more categories."
-            )
-        if len(rows) >= shown_categories * share_limit_per_category:
-            summary.warning(
-                "Per-heatmap point cap may be hiding lower-count coordinates. "
-                "Narrow the slicers for more detail."
-            )
-    if (
-        map_display_mode in {DOMINANT_CATEGORY_MODE, PIECHART_COMPOSITION_MODE}
-        and total_records < matching_records
-    ):
+    if total_records < matching_records:
         summary.warning(
-            f"Map point cap is hiding {matching_records - total_records:,} matching records. "
-            "Increase Max map points or narrow the slicers."
-        )
-    elif map_display_mode == SHARE_HEATMAP_MODE and len(rows) >= map_point_limit:
-        summary.warning(
-            "Map point cap may be hiding focused map points. "
-            "Increase Max map points or narrow the slicers."
-        )
-    elif map_display_mode != SHARE_HEATMAP_MODE and total_records < matching_records:
-        summary.warning(
-            f"Map point cap is hiding {matching_records - total_records:,} matching records. "
-            "Increase Max map points or narrow the slicers."
+            f"SA3 polygon cap is hiding {matching_records - total_records:,} "
+            "matching records. Increase Max SA3 polygons or narrow the slicers."
         )
 
-    if map_display_mode == DOMINANT_CATEGORY_MODE:
-        render_dominant_category_map(rows, st, pdk)
-    elif map_display_mode == CATEGORY_SHARE_HEATMAPS_MODE:
-        render_category_share_heatmaps(rows, st, pdk)
-    elif map_display_mode == PIECHART_COMPOSITION_MODE:
-        render_piechart_composition(rows, st, pdk)
-    elif map_display_mode == SHARE_HEATMAP_MODE:
-        render_share_heatmap(rows, st, pdk)
-    else:
-        render_map(rows, st, pdk)
+    render_sa3_dominant_map(rows, st, pdk)
     if show_year_comparison:
         st.subheader("Year comparison")
         st.bar_chart(years, x="year", y="record_count")
